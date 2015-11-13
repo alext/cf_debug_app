@@ -1,0 +1,2 @@
+---
+  command: "./bin/debug_app; sleep 1; echo 'done'"
