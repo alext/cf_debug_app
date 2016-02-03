@@ -54,7 +54,11 @@ func elasticsearch_status(env envMap) interface{} {
 		return "Error parsing VCAP_SERVICES Json : " + err.Error()
 	}
 
-	esServiceInfo := serviceInfo["elasticsearch13"][0]
+	esServicesInfo, ok := serviceInfo["elasticsearch13"]
+	if !ok || len(esServicesInfo) < 1 {
+		return "No elasticsearch services available"
+	}
+	esServiceInfo := esServicesInfo[0]
 
 	esURL := fmt.Sprintf("http://%s:%s", esServiceInfo.Credentials.Hostname, esServiceInfo.Credentials.Ports["9200/tcp"])
 
