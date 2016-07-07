@@ -1,2 +1,7 @@
 ---
-  command: "./bin/debug_app; sleep 1; echo 'done'"
+applications:
+ - name: debug-app
+   memory: 64M
+   instances: 2
+   command: "./bin/debug_app"
+   buildpack: go_buildpack
