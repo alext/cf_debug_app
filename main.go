@@ -21,7 +21,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	env := newEnvMap(os.Environ())
 	data := make(map[string]interface{})
 	data["ENV"] = env
-	data["es_stats"] = elasticsearch_status(env)
+	data["vcap_application"] = extractJSONData(env, "VCAP_APPLICATION")
+	data["vcap_services"] = extractJSONData(env, "VCAP_SERVICES")
 
 	output, err := json.MarshalIndent(data, "  ", "")
 	if err != nil {
@@ -31,46 +32,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	w.Write(output)
 }
 
-type service struct {
-	Name        string
-	Label       string
-	Tags        []string
-	Plan        string
-	Credentials struct {
-		Hostname string
-		Ports    map[string]string
-	}
-}
-
-func elasticsearch_status(env envMap) interface{} {
-	serviceInfoJson, ok := env["VCAP_SERVICES"]
+func extractJSONData(env envMap, key string) interface{} {
+	raw, ok := env[key]
 	if !ok {
-		return "Missing VCAP_SERVICES in environment"
+		return fmt.Sprintf("Env var %s not found", key)
 	}
-
-	serviceInfo := make(map[string][]service)
-	err := json.Unmarshal([]byte(serviceInfoJson), &serviceInfo)
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(raw), &data)
 	if err != nil {
-		return "Error parsing VCAP_SERVICES Json : " + err.Error()
-	}
-
-	esServicesInfo, ok := serviceInfo["elasticsearch13"]
-	if !ok || len(esServicesInfo) < 1 {
-		return "No elasticsearch services available"
-	}
-	esServiceInfo := esServicesInfo[0]
-
-	esURL := fmt.Sprintf("http://%s:%s", esServiceInfo.Credentials.Hostname, esServiceInfo.Credentials.Ports["9200/tcp"])
-
-	resp, err := http.Get(esURL + "/_cluster/stats")
-	if err != nil {
-		return "Error querying ES status : " + err.Error()
-	}
-	defer resp.Body.Close()
-	data := make(map[string]interface{})
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return "Error parsing ES Json : " + err.Error()
+		return fmt.Sprintf("Error parsing JSON : %s", err.Error())
 	}
 	return data
 }
