@@ -20,9 +20,7 @@ func main() {
 func handler(w http.ResponseWriter, r *http.Request) {
 	env := newEnvMap(os.Environ())
 	data := make(map[string]interface{})
-	data["ENV"] = env
-	data["vcap_application"] = extractJSONData(env, "VCAP_APPLICATION")
-	data["vcap_services"] = extractJSONData(env, "VCAP_SERVICES")
+	data["ENV"] = expandJSONFields(env)
 
 	output, err := json.MarshalIndent(data, "  ", "")
 	if err != nil {
@@ -32,15 +30,20 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	w.Write(output)
 }
 
-func extractJSONData(env envMap, key string) interface{} {
-	raw, ok := env[key]
-	if !ok {
-		return fmt.Sprintf("Env var %s not found", key)
-	}
-	var data map[string]interface{}
-	err := json.Unmarshal([]byte(raw), &data)
-	if err != nil {
-		return fmt.Sprintf("Error parsing JSON : %s", err.Error())
+func expandJSONFields(env envMap) map[string]interface{} {
+	data := make(map[string]interface{}, len(env))
+	for key, value := range env {
+		if value[0] == '{' || value[0] == '[' {
+			var valueData interface{}
+			err := json.Unmarshal([]byte(value), &valueData)
+			if err != nil {
+				data[key] = value
+			} else {
+				data[key] = valueData
+			}
+		} else {
+			data[key] = value
+		}
 	}
 	return data
 }
