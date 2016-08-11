@@ -11,13 +11,17 @@ import (
 func main() {
 	addr := ":" + os.Getenv("PORT")
 	fmt.Println("Listening on", addr)
-	err := http.ListenAndServe(addr, http.HandlerFunc(handler))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("OK\n")) })
+	http.HandleFunc("/env", env)
+	http.HandleFunc("/boom", func(w http.ResponseWriter, r *http.Request) { http.Error(w, "Error", http.StatusInternalServerError) })
+
+	err := http.ListenAndServe(addr, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func env(w http.ResponseWriter, r *http.Request) {
 	env := newEnvMap(os.Environ())
 	data := make(map[string]interface{})
 	data["ENV"] = expandJSONFields(env)
