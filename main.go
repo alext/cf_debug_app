@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 func main() {
@@ -14,6 +15,11 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("OK\n")) })
 	http.HandleFunc("/env", env)
 	http.HandleFunc("/boom", func(w http.ResponseWriter, r *http.Request) { http.Error(w, "Error", http.StatusInternalServerError) })
+	http.HandleFunc("/missing", http.NotFound)
+	http.HandleFunc("/slow", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(500 * time.Millisecond)
+		w.Write([]byte("OK\n"))
+	})
 
 	err := http.ListenAndServe(addr, nil)
 	if err != nil {
