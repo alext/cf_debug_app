@@ -32,7 +32,7 @@ func env(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["ENV"] = expandJSONFields(env)
 
-	output, err := json.MarshalIndent(data, "  ", "")
+	output, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
