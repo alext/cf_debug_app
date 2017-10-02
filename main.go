@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"time"
 )
@@ -14,6 +15,7 @@ func main() {
 	fmt.Println("Listening on", addr)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("OK\n")) })
 	http.HandleFunc("/env", env)
+	http.HandleFunc("/request-info", requestInfo)
 	http.HandleFunc("/boom", func(w http.ResponseWriter, r *http.Request) { http.Error(w, "Error", http.StatusInternalServerError) })
 	http.HandleFunc("/missing", http.NotFound)
 	http.HandleFunc("/slow", func(w http.ResponseWriter, r *http.Request) {
@@ -38,6 +40,15 @@ func env(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(output)
+}
+
+func requestInfo(w http.ResponseWriter, r *http.Request) {
+	info, err := httputil.DumpRequest(r, false)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(info)
 }
 
 func expandJSONFields(env envMap) map[string]interface{} {
