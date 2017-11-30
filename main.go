@@ -7,8 +7,21 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
+
+func handleSignal() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGTERM)
+
+	s := <-c
+	fmt.Println("Got signal:", s, "sleeping for 8 seconds")
+	time.Sleep(8 * time.Second)
+	fmt.Println("Exiting now")
+	os.Exit(0)
+}
 
 func main() {
 	addr := ":" + os.Getenv("PORT")
@@ -22,6 +35,8 @@ func main() {
 		time.Sleep(500 * time.Millisecond)
 		w.Write([]byte("OK\n"))
 	})
+
+	go handleSignal()
 
 	err := http.ListenAndServe(addr, nil)
 	if err != nil {
